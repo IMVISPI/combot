@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>заказ арта</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -48,21 +48,21 @@
     will-change:transform;
   }
   .orb-a{
-    width:340px;height:340px;
+    width:clamp(340px,44vw,560px);height:clamp(340px,44vw,560px);
     left:-120px;top:-90px;
     background:#46307a;
     opacity:.68;
     animation:drift-a 22s ease-in-out infinite alternate;
   }
   .orb-b{
-    width:300px;height:300px;
+    width:clamp(300px,36vw,480px);height:clamp(300px,36vw,480px);
     right:-110px;top:32%;
     background:#5e4090;
     opacity:.5;
     animation:drift-b 26s ease-in-out infinite alternate;
   }
   .orb-c{
-    width:260px;height:260px;
+    width:clamp(260px,30vw,420px);height:clamp(260px,30vw,420px);
     left:8%;bottom:-110px;
     background:#2e2158;
     opacity:.62;
@@ -193,8 +193,8 @@
     border-color:var(--accent-soft);
     box-shadow:0 0 0 1px rgba(165,139,212,0.3),0 18px 40px -18px rgba(4,2,10,0.85),0 4px 24px rgba(90,62,150,0.22);
   }
-  .card.selected .marker{border-color:var(--accent)}
-  .card.selected .marker::after{opacity:1;transform:scale(1)}
+  .card.selected .marker,.urgent.selected .marker{border-color:var(--accent)}
+  .card.selected .marker::after,.urgent.selected .marker::after{opacity:1;transform:scale(1)}
   .card.selected .card-price{color:#cbb9ec;text-shadow:0 0 12px rgba(165,139,212,0.35)}
 
   .urgent{display:flex;align-items:center;gap:13px;padding:15px 16px}
@@ -202,11 +202,11 @@
 
   .textarea{
     width:100%;
-    min-height:132px;
-    padding:14px 15px;
+    min-height:138px;
+    padding:14px 15px 16px;
     font:inherit;
     font-size:9px;
-    line-height:1.9;
+    line-height:2;
     color:var(--text);
     caret-color:var(--accent);
     resize:vertical;
@@ -262,6 +262,29 @@
   }
   .submit:hover{background:linear-gradient(180deg,rgba(178,155,222,0.38),rgba(134,105,190,0.28))}
   .submit:active{transform:scale(0.975)}
+
+  /*--- десктоп:крупнее текст,сетка тарифов 2x2 ---*/
+  @media (min-width:720px){
+    body{font-size:12px}
+    .app{max-width:640px;padding:44px 24px 0}
+    .tag{font-size:9px;padding:7px 12px 6px}
+    h1{font-size:20px;margin:18px 0 12px}
+    .sub{font-size:11px}
+    .label{font-size:9px;margin:30px 2px 12px}
+    .formats{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .card{padding:17px 18px;gap:14px}
+    .marker{width:16px;height:16px}
+    .card-name{font-size:12px}
+    .card-desc{font-size:10px}
+    .card-price{font-size:11px}
+    .urgent{padding:17px 18px}
+    .textarea{font-size:11px;min-height:150px}
+    .sum-total{font-size:12px}
+    .sum-deadline{font-size:9px}
+    .submit{font-size:13px;padding:18px}
+    .footer{padding:26px 0 28px}
+    .status{font-size:9px}
+  }
 </style>
 </head>
 <body>
