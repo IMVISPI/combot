@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>заказ арта</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0612;
+    --glass:rgba(26,16,46,0.45);
+    --edge:rgba(255,255,255,0.1);
+    --edge-top:rgba(255,255,255,0.3);
+    --accent:#a58bd4;
+    --accent-soft:rgba(157,132,199,0.55);
+    --glare:rgba(196,173,255,0.18);
+    --text:#ece7f6;
+    --muted:#8f85a3;
+    --shadow:0 18px 40px -18px rgba(4,2,10,0.85),0 4px 14px rgba(4,2,10,0.45);
+    --spring:cubic-bezier(0.2,0.8,0.2,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{height:100%}
+  body{
+    min-height:100%;
+    font-family:"Press Start 2P",monospace;
+    background:var(--bg);
+    color:var(--text);
+    font-size:10px;
+    line-height:1.8;
+    -webkit-font-smoothing:antialiased;
+    touch-action:manipulation;
+    overflow-x:hidden;
+  }
+  ::selection{background:rgba(165,139,212,0.35)}
+
+  /*--- ambient spheres:плавающие размытые сферы под стеклом ---*/
+  .orb{
+    position:fixed;
+    border-radius:50%;
+    filter:blur(90px);
+    pointer-events:none;
+    z-index:0;
+    will-change:transform;
+  }
+  .orb-a{
+    width:340px;height:340px;
+    left:-120px;top:-90px;
+    background:#46307a;
+    opacity:.68;
+    animation:drift-a 22s ease-in-out infinite alternate;
+  }
+  .orb-b{
+    width:300px;height:300px;
+    right:-110px;top:32%;
+    background:#5e4090;
+    opacity:.5;
+    animation:drift-b 26s ease-in-out infinite alternate;
+  }
+  .orb-c{
+    width:260px;height:260px;
+    left:8%;bottom:-110px;
+    background:#2e2158;
+    opacity:.62;
+    animation:drift-c 19s ease-in-out infinite alternate;
+  }
+  @keyframes drift-a{to{transform:translate(70px,55px) scale(1.12)}}
+  @keyframes drift-b{to{transform:translate(-60px,-45px) scale(0.94)}}
+  @keyframes drift-c{to{transform:translate(45px,-60px) scale(1.08)}}
+  @media (prefers-reduced-motion:reduce){
+    .orb{animation:none}
+  }
+
+  .app{
+    position:relative;
+    z-index:1;
+    max-width:480px;
+    margin:0 auto;
+    padding:26px 16px 0;
+    display:flex;
+    flex-direction:column;
+    min-height:100svh;
+  }
+  .content{flex:1}
+
+  /*--- стеклянная база ---*/
+  .glaze{
+    position:relative;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0) 38%),
+      var(--glass);
+    backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--edge);
+    border-top:1px solid var(--edge-top);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+  }
+
+  /*--- световой зонд:радиальный отблеск под пальцем ---*/
+  .probe{--mouse-x:50%;--mouse-y:50%;overflow:hidden}
+  .probe::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    background:radial-gradient(220px circle at var(--mouse-x) var(--mouse-y),var(--glare),rgba(196,173,255,0.05) 42%,transparent 68%);
+    opacity:0;
+    transition:opacity .3s ease;
+    pointer-events:none;
+    z-index:0;
+  }
+  .probe.lit::before{opacity:1}
+
+  /*--- пружинистая кинематика ---*/
+  .tap{
+    cursor:pointer;
+    user-select:none;
+    transition:transform .2s var(--spring),border-color .2s ease,box-shadow .2s ease;
+  }
+  .tap:active{transform:scale(0.975)}
+
+  .head{padding:4px 2px 2px}
+  .tag{
+    display:inline-block;
+    padding:6px 10px 5px;
+    font-size:8px;
+    letter-spacing:.14em;
+    color:#cbb9ec;
+    background:rgba(46,30,79,0.4);
+    border:1px solid rgba(197,176,235,0.28);
+    border-radius:6px;
+  }
+  h1{
+    font-size:15px;
+    font-weight:400;
+    letter-spacing:.02em;
+    margin:14px 0 10px;
+  }
+  .sub{font-size:9px;color:var(--muted);line-height:1.9}
+
+  .label{
+    font-size:8px;
+    letter-spacing:.16em;
+    color:var(--muted);
+    margin:24px 2px 10px;
+  }
+
+  .formats{display:flex;flex-direction:column;gap:12px}
+
+  .card{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    padding:15px 16px;
+  }
+  .card input{position:absolute;opacity:0;pointer-events:none}
+  .marker{
+    width:14px;height:14px;
+    flex:none;
+    border:2px solid rgba(255,255,255,0.28);
+    border-radius:4px;
+    position:relative;
+    transition:border-color .2s ease,box-shadow .2s ease;
+    z-index:1;
+  }
+  .marker::after{
+    content:"";
+    position:absolute;
+    inset:2px;
+    border-radius:2px;
+    background:var(--accent);
+    opacity:0;
+    transform:scale(0.6);
+    transition:opacity .2s ease,transform .2s var(--spring);
+  }
+  .card-body{min-width:0;z-index:1}
+  .card-name{display:block;font-size:10px;transition:color .2s ease}
+  .card-desc{display:block;font-size:8px;color:var(--muted);margin-top:5px;line-height:1.7}
+  .card-price{
+    margin-left:auto;
+    font-size:9px;
+    color:var(--muted);
+    white-space:nowrap;
+    transition:color .2s ease,text-shadow .2s ease;
+    z-index:1;
+  }
+  .card.selected{
+    border-color:var(--accent-soft);
+    box-shadow:0 0 0 1px rgba(165,139,212,0.3),0 18px 40px -18px rgba(4,2,10,0.85),0 4px 24px rgba(90,62,150,0.22);
+  }
+  .card.selected .marker{border-color:var(--accent)}
+  .card.selected .marker::after{opacity:1;transform:scale(1)}
+  .card.selected .card-price{color:#cbb9ec;text-shadow:0 0 12px rgba(165,139,212,0.35)}
+
+  .urgent{display:flex;align-items:center;gap:13px;padding:15px 16px}
+  .urgent input{position:absolute;opacity:0;pointer-events:none}
+
+  .textarea{
+    width:100%;
+    min-height:132px;
+    padding:14px 15px;
+    font:inherit;
+    font-size:9px;
+    line-height:1.9;
+    color:var(--text);
+    caret-color:var(--accent);
+    resize:vertical;
+    transition:border-color .2s ease,box-shadow .2s ease;
+  }
+  .textarea::placeholder{color:#6a6080}
+  .textarea:focus{
+    outline:none;
+    border-color:var(--accent-soft);
+    box-shadow:0 0 0 1px rgba(165,139,212,0.3),var(--shadow);
+  }
+
+  .summary{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:13px 16px;
+  }
+  .sum-total{font-size:10px;color:#cbb9ec}
+  .sum-deadline{font-size:8px;color:var(--muted);text-align:right;line-height:1.7}
+
+  .footer{
+    position:sticky;
+    bottom:0;
+    margin-top:22px;
+    padding:22px 0 calc(16px + env(safe-area-inset-bottom));
+    background:linear-gradient(to bottom,rgba(10,6,18,0),var(--bg) 42%);
+  }
+  .status{
+    display:none;
+    font-size:8px;
+    line-height:1.7;
+    color:#cbb9ec;
+    text-align:center;
+    margin-bottom:10px;
+  }
+  .status.show{display:block}
+  .submit{
+    width:100%;
+    padding:16px;
+    font:inherit;
+    font-size:11px;
+    color:#f4effc;
+    text-shadow:0 1px 0 rgba(10,6,18,0.4);
+    background:linear-gradient(180deg,rgba(165,139,212,0.30),rgba(122,95,175,0.22));
+    border:1px solid rgba(197,176,235,0.45);
+    border-top:1px solid rgba(255,255,255,0.38);
+    border-radius:18px;
+    backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    box-shadow:var(--shadow);
+  }
+  .submit:hover{background:linear-gradient(180deg,rgba(178,155,222,0.38),rgba(134,105,190,0.28))}
+  .submit:active{transform:scale(0.975)}
+</style>
+</head>
+<body>
+
+<div class="orb orb-a"></div>
+<div class="orb orb-b"></div>
+<div class="orb orb-c"></div>
+
+<div class="app">
+  <div class="content">
+    <header class="head">
+      <span class="tag">арт-комисс</span>
+      <h1>заказ арта</h1>
+      <p class="sub">выбери формат:чиби,аватарка или халф</p>
+    </header>
+
+    <section>
+      <div class="label">формат</div>
+      <div class="formats" id="formats"></div>
+    </section>
+
+    <section>
+      <div class="label">описание заказа</div>
+      <textarea id="desc" class="glaze textarea" maxlength="1500" placeholder="описание персонажа,позы и ссылки на рефы"></textarea>
+    </section>
+
+    <section>
+      <div class="label">детали</div>
+      <label class="glaze probe tap urgent" id="urgentCard">
+        <input type="checkbox" id="urgentInput">
+        <span class="marker" aria-hidden="true"></span>
+        <span class="card-body">
+          <span class="card-name">срочно(+2 stars)</span>
+          <span class="card-desc">дедлайн:2-4 дня вместо 1-2 недель</span>
+        </span>
+      </label>
+    </section>
+
+    <section>
+      <div class="label">итого</div>
+      <div class="glaze summary">
+        <span class="sum-total" id="sumTotal">итого:0 stars</span>
+        <span class="sum-deadline" id="sumDeadline">дедлайн:стандартный(1-2 недели)</span>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="status" id="status"></div>
+    <button class="submit tap" id="submitBtn" type="button">отправить заявку(0 stars)</button>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var FORMATS=[
+    {id:"chibi",name:"чиби/лайн",price:1,desc:"маленький формат,чистый лайн"},
+    {id:"avatar",name:"аватарка/скетч",price:3,desc:"портрет по плечи,мягкий скетч"},
+    {id:"half",name:"халф-боди",price:5,desc:"поясной портрет с цветом"},
+    {id:"full",name:"полнорост",price:10,desc:"полная фигура,детализация,фон"}
+  ];
+  var URGENT_FEE=2;
+  var state={format:null,urgent:false};
+
+  var tg=(window.Telegram&&window.Telegram.WebApp)?window.Telegram.WebApp:null;
+  if(tg){
+    try{
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor("#0a0612");
+      tg.setBackgroundColor("#0a0612");
+    }catch(e){}
+  }
+
+  /*--- световой зонд:координаты касания уходят в css-переменные карточки ---*/
+  function attachProbe(el){
+    function track(e){
+      var p=(e.touches&&e.touches[0])||e;
+      var r=el.getBoundingClientRect();
+      el.style.setProperty("--mouse-x",(p.clientX-r.left)+"px");
+      el.style.setProperty("--mouse-y",(p.clientY-r.top)+"px");
+      el.classList.add("lit");
+    }
+    ["pointermove","mousemove","touchmove"].forEach(function(ev){
+      el.addEventListener(ev,track,{passive:true});
+    });
+    el.addEventListener("pointerleave",function(){el.classList.remove("lit")});
+    el.addEventListener("pointercancel",function(){el.classList.remove("lit")});
+  }
+
+  var formatsEl=document.getElementById("formats");
+  var descEl=document.getElementById("desc");
+  var urgentCard=document.getElementById("urgentCard");
+  var urgentInput=document.getElementById("urgentInput");
+  var sumTotal=document.getElementById("sumTotal");
+  var sumDeadline=document.getElementById("sumDeadline");
+  var submitBtn=document.getElementById("submitBtn");
+  var statusEl=document.getElementById("status");
+  var statusTimer=null;
+
+  FORMATS.forEach(function(f){
+    var el=document.createElement("label");
+    el.className="glaze probe tap card";
+    el.setAttribute("data-id",f.id);
+    el.innerHTML=
+      '<input type="radio" name="format" value="'+f.id+'">'+
+      '<span class="marker" aria-hidden="true"></span>'+
+      '<span class="card-body">'+
+        '<span class="card-name">'+f.name+'</span>'+
+        '<span class="card-desc">'+f.desc+'</span>'+
+      '</span>'+
+      '<span class="card-price">'+f.price+' stars</span>';
+    el.addEventListener("click",function(){
+      state.format=f;
+      render();
+    });
+    attachProbe(el);
+    formatsEl.appendChild(el);
+  });
+  attachProbe(urgentCard);
+  attachProbe(submitBtn);
+
+  urgentInput.addEventListener("change",function(){
+    state.urgent=urgentInput.checked;
+    render();
+  });
+
+  function calcTotal(){
+    var base=state.format?state.format.price:0;
+    return base+(state.urgent?URGENT_FEE:0);
+  }
+
+  function render(){
+    var cards=formatsEl.children;
+    for(var i=0;i<cards.length;i++){
+      cards[i].classList.toggle("selected",cards[i].getAttribute("data-id")===(state.format&&state.format.id));
+    }
+    urgentCard.classList.toggle("selected",state.urgent);
+    sumTotal.textContent="итого:"+calcTotal()+" stars";
+    sumDeadline.textContent=state.urgent?"дедлайн:срочный(2-4 дня)":"дедлайн:стандартный(1-2 недели)";
+    submitBtn.textContent="отправить заявку("+calcTotal()+" stars)";
+  }
+
+  function showStatus(text){
+    statusEl.textContent=text;
+    statusEl.classList.add("show");
+    if(statusTimer){clearTimeout(statusTimer)}
+    statusTimer=setTimeout(function(){
+      statusEl.classList.remove("show");
+    },3000);
+  }
+
+  submitBtn.addEventListener("click",function(){
+    if(!state.format){
+      showStatus("сначала выбери формат");
+      return;
+    }
+    if(descEl.value.trim().length<10){
+      showStatus("опиши заказ:персонаж,поза и ссылки на рефы");
+      return;
+    }
+    if(!tg||!tg.sendData){
+      showStatus("открой приложение через бота,чтобы отправить заявку");
+      return;
+    }
+    var payload={
+      format_id:state.format.id,
+      format:state.format.name,
+      base_price:state.format.price,
+      urgent:state.urgent,
+      urgent_fee:state.urgent?URGENT_FEE:0,
+      price:calcTotal(),
+      description:descEl.value.trim()
+    };
+    try{
+      tg.sendData(JSON.stringify(payload));
+      tg.close();
+    }catch(e){
+      showStatus("не удалось отправить,попробуй еще раз");
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
